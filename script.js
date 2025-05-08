@@ -120,6 +120,40 @@ function calculateAvgLast10Raw(historyArray) {
     return count > 0 ? sum / count : null;
 }
 
+// --- Helper Function: Classify Sum of 4 (Equivalent to F1 logic) ---
+function classifyE3(sum4) {
+    if (sum4 === null) return ""; // No sum data from 4 quads
+
+    // Use ranges defined previously (Sum ranges from 4 to 16 for 4 quads)
+    if (sum4 <= 4) return "E3_ExtremeLow"; // Only 4
+    if (sum4 >= 16) return "E3_ExtremeHigh"; // Only 16
+    if (sum4 >= 5 && sum4 <= 6) return "E3_Low";
+    if (sum4 >= 14 && sum4 <= 15) return "E3_High";
+    if (sum4 >= 7 && sum4 <= 8) return "E3_MidLow";
+    if (sum4 >= 12 && sum4 <= 13) return "E3_MidHigh";
+    if (sum4 >= 9 && sum4 <= 11) return "E3_Medium"; // Covers 9, 10, 11
+
+     return ""; // Fallback - should cover 4-16
+}
+
+// --- Helper Function: Classify Avg of 10 (Equivalent to G1 logic) ---
+function classifyE4(avg10) {
+     if (avg10 === null) return ""; // No avg data from 10 numbers
+
+    // Use ranges defined previously (Avg ranges roughly 1-36)
+    // Make sure these match the H1 conditions exactly
+    if (avg10 < 14) return "E4_ExtremeLow";
+    if (avg10 > 23) return "E4_ExtremeHigh";
+    if (avg10 >= 14 && avg10 < 16) return "E4_Low";
+    if (avg10 > 21 && avg10 <= 23) return "E4_High";
+    if (avg10 >= 17 && avg10 <= 20) return "E4_Medium"; // Covers 17-20 (near 18.5)
+    if (avg10 >= 16 && avg10 < 17) return "E4_MidLow";
+    if (avg10 > 20 && avg10 <= 21) return "E4_MidHigh";
+
+     return ""; // Fallback
+}
+
+
 // --- Helper Function: Calculate Spatial Distribution (V3.5) ---
 // Calculates the average index position (0-37) of the last 10 valid spins on the wheel.
 function calculateSpatialDistribution(historyArray) {
@@ -351,3 +385,290 @@ function getSuggestion(e3Class, e4Class, spatialClass, trend, volatility) { // A
     // controlled by checking if the getSuggestion function returns a string containing "Zero Edge Signal ACTIVE".
     */
 }
+
+// --- Helper Function: Get Surrounding Numbers String (Equivalent to E5 logic) ---
+function getSurroundingNumbersString(spinResult) {
+    // List of numbers adjacent to 0 or 00 that we want to highlight
+    const zeroAdjacentNumbers = [1, 2, 27, 28, 14, 9, 13, 10]; // Your list
+
+    // Helper to format a single number with highlighting if it's zero-adjacent
+    function formatNumberWithHighlight(number) {
+        // Check if the number (converted to a string or kept as string "00") is in our list
+        // Ensure we compare the number itself, not its quadrant/half
+        const numValue = (typeof number === 'number' && !isNaN(number)) ? number : String(number); // Handle 0 and "00" comparison
+
+        // Use String(number) for the comparison array if zeroAdjacentNumbers contains strings like "1", "2" etc.
+        // Or convert array to numbers if it contains numbers.
+        // Let's convert the list to strings for robust comparison against string/number values from wheelData
+        const zeroAdjacentStrings = zeroAdjacentNumbers.map(String);
+
+        if (zeroAdjacentStrings.includes(String(number))) { // Compare string representations
+            // Wrap the number in a span with the zero-adjacent class
+            return `<span class="zero-adjacent">${number}</span>`;
+        }
+        return String(number); // Otherwise, just return the number as a string
+    }
+
+    // Handle blank or invalid input early
+     if (spinResult === "" || spinResult === null || typeof spinResult === 'undefined') {
+        return ""; // Return blank string
+    }
+
+    // Try to parse the input number, but keep "00" as string if needed
+    let numberToMatch = (spinResult === "00") ? "00" : parseFloat(spinResult);
+    if (spinResult === 0) numberToMatch = 0; // Ensure 0 is treated as number 0
+
+
+    // Check if input is valid (a number or "00")
+     if (isNaN(numberToMatch) && numberToMatch !== "00" && numberToMatch !== 0) {
+         return "Error: Invalid input type"; // Or handle this error elsewhere
+     }
+
+    try {
+        // Find the position of the spin result in the wheel data (using 0-based index for JS arrays)
+        // Use a loop for matching to handle strict type matching (number 0 vs string "00")
+        let spinMatchIndex = -1;
+        for(let i = 0; i < wheelData.length; i++) {
+            if (wheelData[i] === numberToMatch) {
+                spinMatchIndex = i;
+                break;
+            }
+        }
+
+
+        if (spinMatchIndex === -1) {
+            // Number not found in WheelData
+            return "Error: Spin not found in WheelData";
+        }
+
+        // Calculate the position of the polar opposite (0-based index)
+        const oppositeMatchIndex = (spinMatchIndex + 19) % wheelSize;
+
+        let surroundingNumbers = [];
+
+        // Around Self (5 before, self, 5 after)
+        for (let i = -5; i <= 5; i++) {
+            const position = (spinMatchIndex + i + wheelData.length) % wheelData.length; // Handles wrapping, use wheelData.length
+            surroundingNumbers.push(wheelData[position]);
+        }
+
+        let oppositeNumbers = [];
+         // Around Opposite (5 before, opposite, 5 after)
+         for (let i = -5; i <= 5; i++) {
+            const position = (oppositeMatchIndex + i + wheelData.length) % wheelData.length; // Handles wrapping, use wheelData.length
+            oppositeNumbers.push(wheelData[position]);
+        }
+
+        // Build the final output string, applying formatting to each number
+        let outputParts = surroundingNumbers.map(formatNumberWithHighlight);
+        let outputString = "| " + outputParts.join(" | ") + " | ";
+        outputString += " --- | "; // The separator you found
+        outputParts = oppositeNumbers.map(formatNumberWithHighlight);
+        outputString += outputParts.join(" | ") + " |";
+
+
+        return outputString;
+
+
+    } catch (error) {
+        // Catch any errors during calculation
+        return "Calculation Error: " + error.message;
+    }
+}
+
+
+// --- Main Update Function ---
+// This function is called when the Add Spin button is clicked
+function updateAnalysisDisplay() {
+    // 1. Get the current value from the input box
+    const currentInputValue = spinInput.value.trim(); // Use trim to remove leading/trailing spaces
+
+    // Clear previous outputs if the input is blank - Should not happen with button, but good practice
+    if (currentInputValue === "") {
+        // Clear display elements
+        sum4Output.textContent = "";
+        avg10Output.textContent = "";
+        suggestionOutput.textContent = "";
+        surroundingNumbersOutput.textContent = "";
+        lastSpinQuadrantOutput.textContent = "";
+        lastSpinHalfOutput.textContent = "";
+        last10SpinsList.textContent = ""; // Clear history display
+        last10QuadrantsList.textContent = ""; // Clear Q history display
+        last10HalvesList.textContent = ""; // Clear H history display
+        validationFeedback.textContent = ""; // Clear validation message
+        return; // Stop processing
+    }
+
+     // 2. Validate and parse the input (handle "0", "00", and numbers)
+    let parsedSpin;
+    if (currentInputValue === "00") {
+        parsedSpin = "00"; // Keep "00" as string
+    } else {
+       const num = parseFloat(currentInputValue);
+       if (isNaN(num) || !Number.isInteger(num) || num < 0 || num > 36) { // Includes 0 in valid numbers
+           // Input is not a valid number 0-36 or "00"
+            validationFeedback.textContent = "Invalid input. Enter 0-36 or 00."; // Show validation error
+             // Clear display elements
+             sum4Output.textContent = "";
+             avg10Output.textContent = "";
+             suggestionOutput.textContent = "";
+             surroundingNumbersOutput.textContent = "";
+             lastSpinQuadrantOutput.textContent = "";
+             lastSpinHalfOutput.textContent = "";
+             last10SpinsList.textContent = ""; // Clear history display
+             last10QuadrantsList.textContent = ""; // Clear Q history display
+             last10HalvesList.textContent = ""; // Clear H history display
+            return; // Stop processing
+       }
+       parsedSpin = num; // Valid number (0-36)
+    }
+
+    // Input is valid - clear validation feedback
+    validationFeedback.textContent = "";
+
+    // 3. Add the validated input to the history array
+    // **Corrected Logic: Always push valid input**
+    spinHistory.push(parsedSpin);
+    // Optional: Limit history size? spinHistory = spinHistory.slice(-100); // Keep last 100
+
+
+    // --- Perform Calculations based on History ---
+    // Get the most recent spin from history
+    const lastSpinFromHistory = spinHistory.length > 0 ? spinHistory[spinHistory.length - 1] : null;
+
+    // Only proceed if history is not empty (redundant check with above logic, but safe)
+    if (lastSpinFromHistory === null) {
+         // Clear display elements
+         sum4Output.textContent = "";
+        avg10Output.textContent = "";
+        suggestionOutput.textContent = "";
+        surroundingNumbersOutput.textContent = "";
+        lastSpinQuadrantOutput.textContent = "";
+        lastSpinHalfOutput.textContent = "";
+        last10SpinsList.textContent = ""; // Clear history display
+        last10QuadrantsList.textContent = ""; // Clear Q history display
+        last10HalvesList.textContent = ""; // Clear H history display
+        return;
+    }
+
+
+    // Display Last Spin Quadrant and Half for the LAST spin added
+     const lastSpinQuad = getQuadrant(lastSpinFromHistory);
+     lastSpinQuadrantOutput.textContent = lastSpinQuad !== null ? lastSpinQuad : "N/A";
+
+     const lastSpinHalf = getHalf(lastSpinFromHistory);
+     lastSpinHalfOutput.textContent = lastSpinHalf !== null ? lastSpinHalf : "N/A";
+
+
+    // Calculate Sum of Last 4 Quadrants
+    const sum4 = calculateSumLast4Quads(spinHistory);
+    sum4Output.textContent = sum4 !== null ? sum4 : "N/A (<4 quads)"; // Display Sum of 4
+
+    // Calculate Avg of Last 10 Raw Results
+    const avg10 = calculateAvgLast10Raw(spinHistory);
+    avg10Output.textContent = avg10 !== null ? avg10.toFixed(2) : "N/A (<10 numbers)"; // Display Avg of 10 (formatted)
+
+    // Classify indicators
+    const e3Class = classifyE3(sum4);
+    const e4Class = classifyE4(avg10);
+
+    // Get Suggestion (H1)
+    const suggestion = getSuggestion(e3Class, e4Class);
+    suggestionOutput.textContent = suggestion;
+
+
+    // --- Get & Display Surrounding Numbers for the LAST spin ---
+     const surroundingString = getSurroundingNumbersString(lastSpinFromHistory);
+     surroundingNumbersOutput.innerHTML = surroundingString; // Use innerHTML to render HTML tags
+
+
+     // --- Display History Lists ---
+     // Get the last 10 spins (or fewer)
+     const last10Spins = spinHistory.slice(-10);
+
+     // Calculate Quadrants and Halves for the last 10 spins
+     const last10Quads = last10Spins.map(spin => {
+         const quad = getQuadrant(spin);
+         // Display 0, 00, or N/A if not a 1-4 quadrant
+         if (quad === 0) return 0;
+         if (quad === "00") return "00";
+         if (quad === null) return "N/A";
+         return quad; // Return 1, 2, 3, or 4
+     });
+
+     const last10Halves = last10Spins.map(spin => {
+         const half = getHalf(spin);
+          // Display 0, 00, or N/A if not a 1-18/19-36 half
+         if (half === 0) return 0;
+         if (half === "00") return "00";
+         if (half === null) return "N/A";
+         return half; // Return "1-18" or "19-36"
+     });
+
+
+     // **Display the History Lists (Most recent FIRST)**
+     // Need to reverse the slices *before* joining them for display
+     const displayedSpins = last10Spins.slice().reverse(); // Create copy before reversing
+     const displayedQuads = last10Quads.slice().reverse(); // Create copy before reversing
+     const displayedHalves = last10Halves.slice().reverse(); // Create copy before reversing
+
+
+     last10SpinsList.textContent = displayedSpins.join(", ");
+     last10QuadrantsList.textContent = displayedQuads.join(", ");
+     last10HalvesList.textContent = displayedHalves.join(", ");
+
+
+     // Clear input field after adding to history
+     spinInput.value = ""; // Uncomment this line if you want input field to clear after adding
+     // Keep focus on input for rapid entry (optional)
+     // spinInput.focus(); // This might cause issues on some mobile keyboards
+
+}
+
+
+// --- Event Listener ---
+// **Trigger updateAnalysisDisplay when the Add Spin button is clicked**
+addSpinButton.addEventListener('click', updateAnalysisDisplay);
+
+// Optional: Also trigger on Enter key press in the input field
+spinInput.addEventListener('keypress', function(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault(); // Prevent default form submission if any
+        updateAnalysisDisplay(); // Trigger update
+    }
+});
+
+
+// --- Initial Call ---
+// No initial call needed as user will press button
+// updateAnalysisDisplay();
+
+/*
+// Optional: Add a button to clear history
+// Add button in HTML: <button id="clearHistoryButton">Clear History</button>
+// **This code IS now active in the main script block provided above**
+*/
+
+// Clear History Button Listener (Active in the main script block)
+clearHistoryButton.addEventListener('click', () => {
+    spinHistory = [];
+    spinInput.value = ""; // Clear input too
+    // Clear all display elements
+    sum4Output.textContent = "";
+    avg10Output.textContent = "";
+    suggestionOutput.textContent = "";
+    surroundingNumbersOutput.textContent = "";
+    lastSpinQuadrantOutput.textContent = "";
+    lastSpinHalfOutput.textContent = "";
+    last10SpinsList.textContent = "";
+    last10QuadrantsList.textContent = "";
+    last10HalvesList.textContent = "";
+    validationFeedback.textContent = "";
+     // spinInput.focus(); // Return focus - This might cause issues on some mobile keyboards
+});
+
+
+/*
+// Optional: Function to save/load history to browser's local storage (more advanced)
+// This allows history to persist if you close and reopen the browser page
+*/

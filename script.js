@@ -1,3 +1,7 @@
+// --- Wheel Data ---
+// This array represents your WheelData!F2:F39 range in wheel order
+// IMPORTANT: Make sure this exactly matches the order on your physical wheel (0, 00, 1-36)
+// Use numbers for 1-36 and 0. Use string "00" if that's how you enter it.
 const wheelData = [
     // !!! REPLACE THIS ARRAY WITH YOUR ACTUAL WHEEL ORDER !!!
     // Ensure numbers 1-36 and 0 are *numbers*, and "00" is the *string* "00" if your wheel has it.
@@ -6,6 +10,7 @@ const wheelData = [
     27, 10, 25, 29, 12, 8, 19, 31, 18, 6, 21, 33, 16, 4, 23, 35, 14, 2
     // !!! END OF ARRAY TO REPLACE !!!
 ];
+
 const wheelSize = wheelData.length; // Should be 38 for double zero. If no 00, change to 37.
 
 // --- History Storage ---

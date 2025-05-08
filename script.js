@@ -1,3 +1,4 @@
+console.log("--- My Roulette Script Loaded! ---");
 // --- Wheel Data ---
 // This array represents your WheelData!F2:F39 range in wheel order
 // IMPORTANT: Make sure this exactly matches the order on your physical wheel (0, 00, 1-36)

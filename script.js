@@ -2,7 +2,9 @@
 // This array represents your WheelData!F2:F39 range in wheel order
 // IMPORTANT: Make sure this exactly matches the order on your physical wheel (0, 00, 1-36)
 // Use numbers for 1-36 and 0. Use string "00" if that's how you enter it.
-const wheelData = [0, 28, 9, 26, 30, 11, 7, 20, 32, 17, 5, 22, 34, 15, 3, 24, 36, 13, 1, "00", 27, 10, 25, 29, 12, 8, 19, 31, 18, 6, 21, 33, 16, 4, 23, 35, 14, 2];
+const wheelData = [
+    0, 28, 9, 26, 30, 11, 7, 20, 32, 17, 5, 22, 34, 15, 3, 24, 36, 13, 1, "00", 27, 10, 25, 29, 12, 8, 19, 31, 18, 6, 21, 33, 16, 4, 23, 35, 14, 2
+];
 
 const wheelSize = wheelData.length; // Should be 38 for double zero. If no 00, change to 37.
 
@@ -198,6 +200,7 @@ function calculateTrendMomentum(historyArray) {
 
 // --- Helper Function: Calculate Volatility (V3.5 - Placeholder) ---
 // Will implement logic to measure scatter or variability of recent results.
+// For now, it returns a placeholder string or null
 function calculateVolatility(historyArray) {
     // TODO: Implement logic to measure scatter or variability of recent spins
     // This could be standard deviation of positions, number of unique quads/halves hit recently, etc.

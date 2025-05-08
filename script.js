@@ -2,13 +2,7 @@
 // This array represents your WheelData!F2:F39 range in wheel order
 // IMPORTANT: Make sure this exactly matches the order on your physical wheel (0, 00, 1-36)
 // Use numbers for 1-36 and 0. Use string "00" if that's how you enter it.
-const wheelData = [
-    // !!! REPLACE THIS ARRAY WITH YOUR ACTUAL WHEEL ORDER !!!
-    // Ensure numbers 1-36 and 0 are *numbers*, and "00" is the *string* "00" if your wheel has it.
-    0, 28, 9, 26, 30, 11, 7, 20, 32, 17, 5, 22, 34, 15, 3, 24, 36, 13, 1,
-    "00", // <-- CORRECTED: "00" is now a string
-    27, 10, 25, 29, 12, 8, 19, 31, 18, 6, 21, 33, 16, 4, 23, 35, 14, 2
-    // !!! END OF ARRAY TO REPLACE !!!
+const wheelData = [0, 28, 9, 26, 30, 11, 7, 20, 32, 17, 5, 22, 34, 15, 3, 24, 36, 13, 1, "00", 27, 10, 25, 29, 12, 8, 19, 31, 18, 6, 21, 33, 16, 4, 23, 35, 14, 2
 ];
 
 const wheelSize = wheelData.length; // Should be 38 for double zero. If no 00, change to 37.
@@ -248,8 +242,14 @@ function getSuggestion(e3Class, e4Class, spatialClass, trend, volatility) { // A
 
      // Need Trend & Volatility & Spatial data for full V3.5 analysis
      // Check if *all* classification strings are ready from helpers
-     if (spatialClass === "" || trend === null || volatility === null) { // Assuming helpers return null/"" if not ready
-          return "Analyzing Pattern... Need more data for V3.5 indicators.";
+     // NOTE: Trend/Volatility/Spatial helpers return null or placeholder string like "Analyzing..."
+     // Need to check if they returned a non-null/non-placeholder value if their data requirement is met
+     // For now, let's check if they are *not* null AND *not* the "Analyzing..." placeholder
+     const v35IndicatorsReady = spatialClass !== "" && trend !== null && trend !== "Trend: Analyzing..." && volatility !== null && volatility !== "Volatility: Analyzing...";
+
+
+     if (!v35IndicatorsReady) {
+          return "Analyzing Pattern... Need more data for V3.5 indicators."; // Indicate waiting for new indicators
      }
 
 
@@ -271,7 +271,7 @@ function getSuggestion(e3Class, e4Class, spatialClass, trend, volatility) { // A
          return "VERY Strong Suggest (Low): Low Halves (1-18). Trend/Balance aligned + Low Volatility. High Confidence!";
      }
       // If balance is high AND trend is up AND volatility is low
-     if ((e3Class === "E3_High" || e3Class === "E3_MidHigh") && (e4Class === "E4_High" || e4Class === "E4_High")) { // Corrected G1 High check below
+      if ((e3Class === "E3_High" || e3Class === "E3_MidHigh") && (e4Class === "E4_High" || e4Class === "E4_High")) { // Typo fixed below
           if (trend === "Trend: Up (Last 2)" && volatility === "Volatility: Low") {
               return "VERY Strong Suggest (High): High Halves (19-36). Trend/Balance aligned + Low Volatility. High Confidence!";
           }
@@ -289,85 +289,58 @@ function getSuggestion(e3Class, e4Class, spatialClass, trend, volatility) { // A
          return "Suggest (Near Balance): Bet Middle (Dozen 2/Mid Quads). Indicators near balance + Low Volatility. Highest Likeliness.";
     }
 
-    // TODO: Add many more rules here covering combinations of all 5 indicators!
-    // Example: E3_MidHigh + E4_High + Trend: Down + Volatility: Medium + Spatial: Near Zeros -> ???
+     // TODO: Add many more rules here covering combinations of all 5 indicators!
+     // Example: E3_MidHigh + E4_High + Trend: Down + Volatility: Medium + Spatial: Near Zeros -> ???
 
-    // The old rules become the default if the new, more specific V3.5 rules aren't met
-    // These old rules don't directly use Trend, Volatility, or Spatial classification in their conditions
-    // but the *new* logic above overrides them if those new indicators provide a stronger signal.
+    // --- OLD Rules (Fallback if V3.5 specific rules above aren't met AND V3.5 indicators are ready) ---
+    // Only use OLD rules if the new indicators ARE ready but didn't trigger a new rule
+     if (v35IndicatorsReady) {
+        // Case 1 (Old): Extreme Low E3 & Extreme Low E4
+        if (e3Class === "E3_ExtremeLow" && e4Class === "E4_ExtremeLow") {
+            return "Fallback (V3.5 Ready): Extreme Low Balance. Review Low Zones."; // Simplified Fallback
+        }
 
-    // --- OLD Rules (Fallback if V3.5 specific rules above aren't met) ---
+        // Case 2 (Old): Extreme High E3 & Extreme High E4
+        if (e3Class === "E3_ExtremeHigh" && e4Class === "E4_ExtremeHigh") {
+             return "Fallback (V3.5 Ready): Extreme High Balance. Review High Zones."; // Simplified Fallback
+        }
 
-    // Case 1 (Old): Extreme Low E3 & Extreme Low E4
-    if (e3Class === "E3_ExtremeLow" && e4Class === "E4_ExtremeLow") {
-        return "OLD Rule: VERY Strong Suggest (Low): Focus Low Quads (1 & 2)..."; // Added "OLD Rule" for clarity during development
-    }
+        // Case 3 (Old): Strong Below Balance
+        if ((e3Class === "E3_Low" || e3Class === "E3_MidLow") && (e4Class === "E4_Low" || e4Class === "E4_MidLow")) {
+            return "Fallback (V3.5 Ready): Strong Below Balance. Review 1-18 Half/Q1/Q2."; // Simplified Fallback
+        }
 
-    // Case 2 (Old): Extreme High E3 & Extreme High E4
-    if (e3Class === "E3_ExtremeHigh" && e4Class === "E4_ExtremeHigh") {
-        return "OLD Rule: VERY Strong Suggest (High): Focus High Quads (3 & 4)..."; // Added "OLD Rule"
-    }
+        // Case 4 (Old): Strong Above Balance
+        if ((e3Class === "E3_High" || e3Class === "E3_MidHigh") && (e4Class === "E4_High" || e4Class === "E4_High")) { // Typo fixed below
+            return "Fallback (V3.5 Ready): Strong Above Balance. Review 19-36 Half/Q3/Q4."; // Simplified Fallback
+        }
+        if ((e3Class === "E3_High" || e3Class === "E3_MidHigh") && (e4Class === "E4_MidHigh")) { // Added MidHigh check
+            return "Fallback (V3.5 Ready): Strong Above Balance. Review 19-36 Half/Q3/Q4."; // Simplified Fallback
+        }
 
-    // Case 3 (Old): Strong Below Balance
-    if ((e3Class === "E3_Low" || e3Class === "E3_MidLow") && (e4Class === "E4_Low" || e4Class === "E4_MidLow")) {
-        return "OLD Rule: Strong Suggest (Low): Low Halves (1-18)..."; // Added "OLD Rule"
-    }
+         // Case 5 (Old): Very Near Balance (This is handled by new rule Case 3 if Low Volatility)
+         // If V=Medium or High, this old rule isn't triggered by new rules, will fall through or hit other rules
 
-    // Case 4 (Old): Strong Above Balance
-    if ((e3Class === "E3_High" || e3Class === "E3_MidHigh") && (e4Class === "E4_High" || e4Class === "E4_High")) { // Typo fixed below
-        return "OLD Rule: Strong Suggest (High): High Halves (19-36)..."; // Added "OLD Rule"
-    }
-    if ((e3Class === "E3_High" || e3Class === "E3_MidHigh") && (e4Class === "E4_MidHigh")) { // Added MidHigh check
-        return "OLD Rule: Strong Suggest (High): High Halves (19-36)..."; // Added "OLD Rule"
-    }
+        // Leaning cases (Old Rules - Fallback if no specific V3.5 or Strong/Very Strong Old rule met)
+        if ((e3Class === "E3_High" || e3Class === "E3_MidHigh") && (e4Class === "E4_MidLow" || e4Class === "E4_Medium")) return "Fallback (V3.5 Ready): Leaning High E, Near E. Review High Quads.";
+        if ((e3Class === "E3_Medium" || e3Class === "E3_MidHigh") && (e4Class === "E4_High" || e4Class === "E4_High")) return "Fallback (V3.5 Ready): Leaning Near E, High E. Review High Halves.";
+        if ((e3Class === "E3_Medium" || e3Class === "E3_MidHigh") && (e4Class === "E4_MidHigh")) return "Fallback (V3.5 Ready): Leaning Near E, MidHigh E. Review High Halves.";
+        if ((e3Class === "E3_Low" || e3Class === "E3_MidLow") && (e4Class === "E4_MidLow" || e4Class === "E4_Medium")) return "Fallback (V3.5 Ready): Leaning Low E, Near E. Review Low Quads.";
+        if ((e3Class === "E3_Medium" || e3Class === "E3_MidHigh") && (e4Class === "E4_Low" || e4Class === "E4_MidLow")) return "Fallback (V3.5 Ready): Leaning Near E, Low E. Review Low Halves.";
 
-     // Case 5 (Old): Very Near Balance
-    if (e3Class === "E3_Medium" && e4Class === "E4_Medium") {
-        return "OLD Rule: Suggest (Near Balance): Bet Middle (Dozen 2/Mid Quads)..."; // Added "OLD Rule"
-    }
-
-    // Case 6 (Old): Leaning High (E3 High/Avg, E4 Near/Avg)
-    if ((e3Class === "E3_High" || e3Class === "E3_MidHigh") && (e4Class === "E4_MidLow" || e4Class === "E4_Medium")) {
-        return "OLD Rule: Leaning Suggest (High): High Quads (3 & 4)..."; // Added "OLD Rule"
-    }
-
-    // Case 7 (Old): Leaning High (E3 Near/Avg, E4 High)
-    if ((e3Class === "E3_Medium" || e3Class === "E3_MidHigh") && (e4Class === "E4_High" || e4Class === "E4_High")) { // Typo fixed below
-        return "OLD Rule: Leaning Suggest (High): High Halves (19-36)..."; // Added "OLD Rule"
-    }
-    if ((e3Class === "E3_Medium" || e3Class === "E3_MidHigh") && (e4Class === "E4_MidHigh")) { // Added MidHigh check
-        return "OLD Rule: Leaning Suggest (High): High Halves (19-36)..."; // Added "OLD Rule"
-    }
+        // Conflict cases (Old Rules - Fallback)
+        if ((e3Class === "E3_High" || e3Class === "E3_MidHigh") && (e4Class === "E4_Low" || e4Class === "E4_MidLow")) return "Fallback (V3.5 Ready): Conflict High E vs Low E. Review Boundary Zones.";
+        if ((e3Class === "E3_Low" || e3Class === "E3_MidLow") && (e4Class === "E4_High" || e4Class === "E4_High")) {
+             return "Fallback (V3.5 Ready): Conflict Low E vs High E. Review Boundary Zones.";
+        }
+        if ((e3Class === "E3_Low" || e3Class === "E3_MidLow") && (e4Class === "E4_MidHigh")) {
+             return "Fallback (V3.5 Ready): Conflict Low E vs MidHigh E. Review Boundary Zones.";
+        }
 
 
-    // Case 8 (Old): Leaning Low (E3 Low/Avg, E4 Near/Avg)
-    if ((e3Class === "E3_Low" || e3Class === "E3_MidLow") && (e4Class === "E4_MidLow" || e4Class === "E4_Medium")) {
-        return "OLD Rule: Leaning Suggest (Low): Low Quads (1 & 2)..."; // Added "OLD Rule"
-    }
-
-    // Case 9 (Old): Leaning Low (E3 Near/Avg, E4 Low)
-    if ((e3Class === "E3_Medium" || e3Class === "E3_MidHigh") && (e4Class === "E4_Low" || e4Class === "E4_MidLow")) {
-        return "OLD Rule: Leaning Suggest (Low): Low Halves (1-18)..."; // Added "OLD Rule"
-    }
-
-
-    // Case 10 (Old): Conflict (High E3 vs Low E4)
-    if ((e3Class === "E3_High" || e3Class === "E3_MidHigh") && (e4Class === "E4_Low" || e4Class === "E4_MidLow")) {
-         return "OLD Rule: Conflict: High Quads vs Low Avg..."; // Added "OLD Rule"
-    }
-
-    // Case 11 (Old): Conflict (Low E3 vs High E4)
-    if ((e3Class === "E3_Low" || e3Class === "E3_MidLow") && (e4Class === "E4_High" || e4Class === "E4_High")) {
-         return "OLD Rule: Conflict: Low Quads vs High Avg..."; // Added "OLD Rule"
-    }
-     if ((e3Class === "E3_Low" || e3Class === "E3_MidLow") && (e4Class === "E4_MidHigh")) { // Added MidHigh check
-         return "OLD Rule: Conflict: Low Quads vs High Avg..."; // Added "OLD Rule"
-    }
-
-
-    // Case 12 (Default): Pattern Breakdown / Zero Edge Signal
-    // This is the final default if NONE of the above rules (new or old) are met.
-    return "V3.5: Pattern Breakdown. Indicators Muddled. Zero Edge Signal ACTIVE."; // Revised default message
+        // If V3.5 is ready but none of the specific *new* rules or *old fallback* rules were hit, it's a truly unclassified state under the old system.
+        // This is where the base 4 '2' signal might be strongest OR the pattern is truly undefined by current rules.
+        return "V3.5 Ready, State Unclassified by Old Rules. Review All Indicators.";
 
 
     /*

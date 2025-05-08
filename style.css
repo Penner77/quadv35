@@ -1,3 +1,5 @@
+/* Add this code to your style.css file */
+
 /* Basic body/page styling */
 body {
     font-family: sans-serif;
@@ -42,6 +44,7 @@ h1, h2, h3 {
 
 .input-section button {
     padding: 8px 12px;
+    /* margin-left: 10px; */ /* Removed margin-left as gap handles spacing */
     border: 1px solid #007bff; /* Blue border */
     border-radius: 4px;
     background-color: #007bff; /* Blue background */
@@ -79,17 +82,10 @@ h1, h2, h3 {
 
 /* Style for individual output lines (Sum, Avg, Quadrant, Half, Suggestion) */
 /* Selects divs directly inside .output-section that are NOT the history container */
-/* Adjusted selector to include new indicator lines */
-.output-section > div:not(:last-child):not(:nth-last-child(2)):not(:nth-last-child(3)) {
+.output-section > div:not(:last-child) {
      margin-bottom: 8px; /* Space between lines */
      padding-bottom: 8px; /* Padding below line */
      border-bottom: 1px dashed #eee; /* Dashed line separator */
-}
-
-/* Style for the new indicator lines */
-#spatialOutput, #trendOutput, #volatilityOutput {
-     font-weight: normal; /* Make the values themselves not bold */
-     /* Add space/border if needed */
 }
 
 /* Remove border/padding from the div containing the history section */
@@ -146,14 +142,3 @@ h1, h2, h3 {
 /* .suggestion-very-strong-low { color: darkred; } */
 /* .suggestion-very-strong-high { color: darkgreen; } */
 /* etc. */
-
-/* Style for numbers adjacent to 0/00 when they appear in the surrounding zones */
-.zero-adjacent {
-    color: orange; /* Change text color to orange */
-    font-weight: bold; /* Make it bold */
-    text-decoration: underline; /* Underline it for extra visibility */
-    /* You could also add a background color */
-    /* background-color: #ffe0b2; */
-    /* padding: 2px 4px; */
-    /* border-radius: 3px; */
-}

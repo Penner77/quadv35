@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roulette Tool</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>Roulette Tool</h1>
+
+    <div class="input-section">
+        <label for="spinInput">Enter Spin Result:</label>
+        <input type="text" id="spinInput" placeholder="e.g., 17, 0, 00">
+        <button id="addSpinButton">Add Spin</button>
+        <button id="clearHistoryButton">Clear History</button>
+        <div id="validationFeedback" style="color: red; font-size: 0.8em; margin-top: 5px;"></div>
+    </div>
+
+    <div class="output-section">
+        <h2>Analysis:</h2>
+        <div>Spin Result Quadrant: <span id="lastSpinQuadrantOutput"></span></div>
+        <div>Spin Result Half: <span id="lastSpinHalfOutput"></span></div>
+        <div>Sum of Last 4 Quadrants: <span id="sum4Output"></span></div>
+        <div>Avg. of Last 10 Raw Results: <span id="avg10Output"></span></div>
+
+        <div>Spatial Distribution: <span id="spatialOutput"></span></div>
+        <div>Trend/Momentum: <span id="trendOutput"></span></div>
+        <div>Volatility: <span id="volatilityOutput"></span></div>
+        <div id="suggestionOutput" style="margin-top: 10px; font-weight: bold;">
+             </div>
+         <div id="surroundingNumbersOutput" style="margin-top: 15px; font-size: 0.9em;">
+            </div>
+
+        <div style="margin-top: 20px;">
+            <h3>History:</h3>
+            <div>Last 10 Spins (most recent first):</div>
+            <div id="last10SpinsList" style="font-size: 0.9em; color: #555;">
+                </div>
+             <div style="margin-top: 10px;">Last 10 Quadrants (most recent first):</div>
+            <div id="last10QuadrantsList" style="font-size: 0.9em; color: #555;">
+                </div>
+            <div style="margin-top: 10px;">Last 10 Halves (most recent first):</div>
+            <div id="last10HalvesList" style="font-size: 0.9em; color: #555;">
+                </div>
+            </div>
+        </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
